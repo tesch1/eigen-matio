@@ -94,6 +94,8 @@ private:
   mat_ft _ft;
   int _mode;
   bool _written;
+  // TODO - capture errors in std::string _errstr;
+  // return them from: const std::string & lasterr();
 
 public:
   MatioFile() : _file(NULL), _ft(MAT_FT_DEFAULT), _mode(0), _written(false) {}
@@ -104,14 +106,13 @@ public:
             const char * header = "MatioFile")
     : _file(NULL), _ft(MAT_FT_DEFAULT), _mode(0), _written(false)
   {
-    Mat_LogInit("hi");
+    //Mat_LogInit("hi");
     open(filename, mode, create, fileversion, header);
   }
   ~MatioFile()
   {
     if (_file)
       Mat_Close(_file);
-    std::cout << "~MatioFile()\n";
   }
   mat_t * file() { return _file; }
   int open(const char * filename,
@@ -322,4 +323,4 @@ read_mat(const char * filename, const char * matname, Derived & matrix)
 
 }
 
-#endif
+#endif // EIGEN_MATIO_MODULE
