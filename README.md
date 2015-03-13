@@ -12,7 +12,7 @@ Using the bare functions:
 #include "Eigen/Dense"
 #include ".../MATIo"
 
-using Eigen;
+using namespace Eigen;
 
 Matrix3f ff;
 
@@ -30,7 +30,7 @@ Using the MatioFile class, potentially more efficient:
 #include "Eigen/Dense"
 #include ".../MATIo"
 
-using Eigen;
+using namespace Eigen;
 
 MatioFile file("data.mat");
 
