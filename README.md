@@ -32,13 +32,15 @@ Using the MatioFile class, potentially more efficient:
 
 using Eigen;
 
-MatioFile("data.mat");
+MatioFile file("data.mat");
 
-Matrix3f ff = Matrix3f::Random();
+Matrix3f ff;
 
 // read it into floats
 file.mat_read("ff", ff);
 std::cout << "ff=" << ff << std::endl;
+
+ff = Matrix3f::Random();
 
 // write it out as doubles
 file.mat_write("dd", ff.cast<double>());
