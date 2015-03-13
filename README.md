@@ -10,7 +10,7 @@ Using the bare functions:
 ```cpp
 #include "Eigen/Core"
 #include "Eigen/Dense"
-#include ".../MATIo"
+#include ".../MATio"
 
 using namespace Eigen;
 
@@ -28,7 +28,7 @@ Using the MatioFile class, potentially more efficient:
 ```cpp
 #include "Eigen/Core"
 #include "Eigen/Dense"
-#include ".../MATIo"
+#include ".../MATio"
 
 using namespace Eigen;
 
