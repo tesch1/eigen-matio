@@ -1,0 +1,255 @@
+// -*-c++-*-
+// This file is part of Eigen, a lightweight C++ template library
+// for linear algebra.
+//
+// Copyright (C) 2015 Michael Tesch tesch a tum de
+//
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+//
+#ifndef EIGEN_MATIO_MODULE
+#define EIGEN_MATIO_MODULE
+
+#include "matio.h"
+#ifndef MATIO_VERSION
+#define MATIO_VERSION (MATIO_MAJOR_VERSION * 100 + MATIO_MINOR_VERSION * 10 + MATIO_RELEASE_LEVEL)
+#endif
+
+#if MATIO_VERSION <= 150
+#define MAT_COMPRESSION_NONE COMPRESSION_NONE
+#define MAT_COMPRESSION_ZLIB COMPRESSION_ZLIB
+typedef ComplexSplit mat_complex_split_t;
+#endif
+
+namespace Eigen {
+
+namespace internal {
+
+// defaults
+template <typename Tp> struct matio_type;
+template <typename Tp> struct matio_class;
+template <typename Tp> struct matio_flag { static const matio_flags id = (matio_flags)0; };
+// specializations
+//template <> struct matio_type<xxx> { typedef xxx type; matio_types id = MAT_T_UNKNOWN; };
+template <> struct matio_type<int8_t> { typedef int8_t type; matio_types id = MAT_T_INT8; };
+template <> struct matio_type<uint8_t> { typedef uint8_t type; matio_types id = MAT_T_UINT8; };
+template <> struct matio_type<int16_t> { typedef int16_t type; matio_types id = MAT_T_INT16; };
+template <> struct matio_type<uint16_t> { typedef uint16_t type; matio_types id = MAT_T_UINT16; };
+template <> struct matio_type<int32_t> { typedef int32_t type; matio_types id = MAT_T_INT32; };
+template <> struct matio_type<uint32_t> { typedef uint32_t type; matio_types id = MAT_T_UINT32; };
+template <> struct matio_type<float> { typedef float type; static const matio_types id = MAT_T_SINGLE; };
+template <> struct matio_type<double> { typedef double type; static const matio_types id = MAT_T_DOUBLE; };
+template <> struct matio_type<long double> { typedef double type; static const matio_types id = MAT_T_DOUBLE; };
+template <> struct matio_type<int64_t> { typedef int64_t type; matio_types id = MAT_T_INT64; };
+template <> struct matio_type<uint64_t> { typedef uint64_t type; matio_types id = MAT_T_UINT64; };
+//template <> struct matio_type<xxx> { typedef xxx type; matio_types id = MAT_T_MATRIX; };
+//template <> struct matio_type<xxx> { typedef xxx type; matio_types id = MAT_T_COMPRESSED; };
+//template <> struct matio_type<xxx> { typedef xxx type; matio_types id = MAT_T_UTF8; };
+//template <> struct matio_type<xxx> { typedef xxx type; matio_types id = MAT_T_UTF16; };
+//template <> struct matio_type<xxx> { typedef xxx type; matio_types id = MAT_T_UTF32; };
+//template <> struct matio_type<xxx> { typedef xxx type; matio_types id = MAT_T_STRING; };
+//template <> struct matio_type<xxx> { typedef xxx type; matio_types id = MAT_T_CELL; };
+//template <> struct matio_type<xxx> { typedef xxx type; matio_types id = MAT_T_STRUCT; };
+//template <> struct matio_type<xxx> { typedef xxx type; matio_types id = MAT_T_ARRAY; };
+//template <> struct matio_type<xxx> { typedef xxx type; matio_types id = MAT_T_FUNCTION; };
+
+//template <> struct matio_class<xxx> { matio_classes id = MAT_C_CELL; };
+//template <> struct matio_class<xxx> { matio_classes id = MAT_C_STRUCT; };
+//template <> struct matio_class<xxx> { matio_classes id = MAT_C_OBJECT; };
+template <> struct matio_class<char> { matio_classes id = MAT_C_CHAR; };
+//template <> struct matio_class<xxx> { matio_classes id = MAT_C_SPARSE; };
+template <> struct matio_class<float> { static const matio_classes id = MAT_C_SINGLE; };
+template <> struct matio_class<double> { static const matio_classes id = MAT_C_DOUBLE; };
+template <> struct matio_class<long double> { static const matio_classes id = MAT_C_DOUBLE; };
+template <> struct matio_class<int8_t> { matio_classes id = MAT_C_INT8; };
+template <> struct matio_class<uint8_t> { matio_classes id = MAT_C_UINT8; };
+template <> struct matio_class<int16_t> { matio_classes id = MAT_C_INT16; };
+template <> struct matio_class<uint16_t> { matio_classes id = MAT_C_UINT16; };
+template <> struct matio_class<int32_t> { matio_classes id = MAT_C_INT32; };
+template <> struct matio_class<uint32_t> { matio_classes id = MAT_C_UINT32; };
+template <> struct matio_class<int64_t> { matio_classes id = MAT_C_INT64; };
+template <> struct matio_class<uint64_t> { matio_classes id = MAT_C_UINT64; };
+//template <> struct matio_class<xxx> { matio_classes id = MAT_C_FUNCTION; };
+
+template <typename Tp> struct matio_flag<std::complex<Tp> > { static const matio_flags id = MAT_F_COMPLEX; };
+//template <> struct matio_flag<xxx> { matio_flags id = MAT_F_COMPLEX; };
+//template <> struct matio_flag<xxx> { matio_flags id = MAT_F_GLOBAL; };
+//template <> struct matio_flag<xxx> { matio_flags id = MAT_F_LOGICAL; };
+//template <> struct matio_flag<xxx> { matio_flags id = MAT_F_CLASS_T; };
+
+} // Eigen::internal::
+
+class MatioFile {
+public:
+  MatioFile() : _file(NULL) {}
+  MatioFile(const char * filename,
+            int mode = MAT_ACC_RDWR,
+            bool create = true,
+            mat_ft fileversion = MAT_FT_DEFAULT,
+            const char * header = "MatioFile")
+    : _file(NULL)
+  {
+    open(filename, mode, create, fileversion, header);
+  }
+  ~MatioFile()
+  {
+    if (_file)
+      Mat_Close(_file);
+    std::cout << "~MatioFile()\n";
+  }
+  mat_t * file() { return _file; }
+  int open(const char * filename,
+           int mode = MAT_ACC_RDWR,
+           bool create = true,
+           mat_ft fileversion = MAT_FT_DEFAULT,
+           const char * header = "MatioFile")
+  {
+    if (_file)
+      close();
+    _file = Mat_Open(filename, mode);
+    if (_file == NULL && create) {
+#if MATIO_VERSION >= 150
+      _file = Mat_CreateVer(filename, header, fileversion);
+#else
+      _file = Mat_Create(filename, header);
+#endif
+    }
+    if (NULL == _file) {
+      std::cout << "MatioFile() unable to open " << filename << "/" << fileversion << "\n";
+      return -1;
+    }
+    return 0;
+  }
+
+  void close()
+  {
+    if (_file)
+      Mat_Close(_file);
+    _file = NULL;
+  }
+
+  // TODO:
+  //Mat_LogInit( const char *prog_name )
+  //Mat_LogClose( void )
+  //Mat_LogInitFunc(const char *prog_name,
+  //   void (*log_func)(int log_level,char *message))
+
+  template <class Matrix>
+  int
+  write_mat(const char * matname, const Matrix & matrix)
+  {
+    if (!_file || !matname) {
+      std::cout << "MatioFile.write_mat() unable to write matrix '" << matname << "'\n";
+      return -1;
+    }
+    typedef typename internal::matio_type<typename Matrix:: Scalar>::type mat_type;
+    enum matio_compression compression = MAT_COMPRESSION_NONE;
+    matvar_t * var;
+#if MATIO_VERSION >= 150
+    size_t rows = matrix.rows();
+    size_t cols = matrix.cols();
+    size_t dims[2] = {rows, cols};
+#else
+#error
+    int rows = matrix.rows();
+    int cols = matrix.cols();
+    int dims[2] = {rows, cols};
+#endif
+
+    matio_types typei = internal::matio_type<typename Matrix:: Scalar>::id;
+    matio_classes classid = internal::matio_class<typename Matrix:: Scalar>::id;
+    matio_flags cxflag = internal::matio_flag<typename Matrix:: Scalar>::id;
+
+    // todo - specialize this for the (common) case where mat_type is the same as
+    // Matrix::Scalar AND Scalar is NOT complex, in which case we dont need to create
+    // temp matrices here...
+    void * data;
+    Eigen::Matrix<mat_type,Eigen::Dynamic,Eigen::Dynamic> dst_re(rows, cols);
+    Eigen::Matrix<mat_type,Eigen::Dynamic,Eigen::Dynamic> dst_im(rows, cols);
+    mat_complex_split_t cs;
+
+    if (cxflag == MAT_F_COMPLEX) {
+      dst_re = matrix.real().template cast<mat_type>();
+      dst_im = matrix.imag().template cast<mat_type>();
+      data = &cs;
+      cs.Re = dst_re.data();
+      cs.Im = dst_im.data();
+    }
+    else {
+      dst_re = matrix.real().template cast<mat_type>();
+      data = dst_re.data();
+    }
+
+    var = Mat_VarCreate(matname, classid, typei, 2, dims, data, cxflag);
+    if (NULL == var) {
+      std::cout << "write_mat() unable to create matrix\n";
+      return -1;
+    }
+
+    // todo - thread safety
+    int status = Mat_VarWrite(_file, var, compression);
+    if (status) {
+      std::cout << "write_mat() unable to put variable\n";
+    }
+
+    Mat_VarFree(var);
+    return status;
+  }
+
+  template <class Matrix>
+  int
+  read_mat(const char * matname, Matrix & matrix)
+  {
+    if (!_file || !matname) {
+      std::cout << "MatioFile.read_mat() unable to read matrix '" << matname << "'\n";
+      return -1;
+    }
+    enum matio_compression compression = MAT_COMPRESSION_NONE;
+
+    matvar_t * var = Mat_VarRead(_file, matname);
+    if (NULL == var) {
+      std::cout << "read_mat() unable to read matrix '" << matname << "'\n";
+      return -1;
+    }
+
+    if (var->rank < 0 || var->rank > 2
+        || var->data_type != 0
+        || var->class_type != 0
+        ) {
+      std::cout << "read_mat() unrecognized matrix format '" << matname << "':\n ";
+      Mat_VarPrint(var, 0);
+      Mat_VarFree(var);
+    }
+
+    // TODO
+    if (var->isComplex)
+      ;
+
+    Mat_VarFree(var);
+    throw std::exception();
+  }
+
+private:
+  mat_t * _file;
+};
+
+template <class Matrix>
+int
+write_mat(const char * filename, const char * matname, const Matrix & matrix)
+{
+  MatioFile file(filename);
+  return file.write_mat(matname, matrix);
+}
+
+template <class Matrix>
+int
+read_mat(const char * filename, const char * matname, Matrix & matrix)
+{
+  MatioFile file(filename, MAT_ACC_RDONLY, false);
+  return file.read_mat(matname, matrix);
+}
+
+}
+
+#endif
