@@ -124,13 +124,12 @@ public:
     if (_file)
       close();
     _file = Mat_Open(filename, mode);
-    if (_file == NULL && create) {
+    if (_file == NULL && create && mode != MAT_ACC_RDONLY) {
 #if MATIO_VERSION >= 150
       _file = Mat_CreateVer(filename, header, fileversion);
 #else
       _file = Mat_Create(filename, header);
 #endif
-      _mode = MAT_ACC_RDWR;
     }
     if (NULL == _file) {
       std::cout << "MatioFile() unable to open " << filename << "/" << fileversion << "\n";
