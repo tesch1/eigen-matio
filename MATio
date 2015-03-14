@@ -1,8 +1,9 @@
 // -*- mode: c++; -*-
+// -*- mode: cpp; -*-
 // This file is part of Eigen, a lightweight C++ template library
 // for linear algebra.
 //
-// Copyright (C) 2015 Michael Tesch tesch a tum de
+// Copyright (C) 2015 Michael Tesch, tesch a tum de
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
