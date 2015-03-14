@@ -1,5 +1,6 @@
 # eigen-matio
-eigen header-only file for reading and writing matlab data files, using the 'matio' library as a backend.
+[Eigen](http://http://eigen.tuxfamily.org) header-only library for reading and writing
+Eigen matrices to/from matlab data files, using the 'matio' library as a backend.
 
 # Usage
 there are two interfaces: 
@@ -45,6 +46,9 @@ ff = Matrix3f::Random();
 // write it out as doubles
 file.mat_write("dd", ff.cast<double>());
 ```
+
+# Contributing
+All contributions welcome!  (With two caveats: they must be MPL2 licensed, and maintain the same code formatting.)
 
 # TODO
 - error checking
