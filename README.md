@@ -1,6 +1,7 @@
 # eigen-matio
 [Eigen](http://http://eigen.tuxfamily.org) header-only library for reading and writing
-Eigen matrices to/from matlab data files, using the 'matio' library as a backend.
+Eigen matrices to/from matlab data files, using the ['matio'](http://sourceforge.net/projects/matio/)
+library as a backend.
 
 # Usage
 there are two interfaces: 
