@@ -131,8 +131,7 @@ public:
   }
   ~MatioFile()
   {
-    if (_file)
-      Mat_Close(_file);
+    close();
   }
   mat_t * file() { return _file; }
   int open(const char * filename,
@@ -189,7 +188,7 @@ public:
   //Mat_LogInitFunc(const char *prog_name,
   //   void (*log_func)(int log_level,char *message))
 
-  template <class Derived>
+  template <class Derived, matio_compression compression = MAT_COMPRESSION_NONE>
   int
   write_mat(const char * matname, const Derived & matrix)
   {
@@ -198,7 +197,6 @@ public:
       return -1;
     }
     typedef typename internal::matio_type<typename Derived:: Scalar>::type mat_type;
-    enum matio_compression compression = MAT_COMPRESSION_NONE;
     matvar_t * var;
 #if MATIO_VERSION >= 150
     size_t rows = matrix.rows();
@@ -244,14 +242,17 @@ public:
     // todo - thread safety
     int status = Mat_VarWrite(_file, var, compression);
     if (status) {
-      std::cout << "write_mat() unable to put variable\n";
+      std::cout << "write_mat() unable to put variable '" << matname << "'\n";
     }
-    _written = true;
+    else
+      _written = true;
 
     Mat_VarFree(var);
     return status;
   }
+
 private:
+
   template <class data_t, class Derived, class Scalar>
   void matrix_from_var(Derived & matrix, matvar_t * var, Scalar zero)
   {
@@ -269,7 +270,9 @@ private:
     matrix.real() = tmp_re.template cast<Scalar>();
     matrix.imag() = tmp_im.template cast<Scalar>();
   }
+
 public:
+
   template <class Derived>
   int
   read_mat(const char * matname, Derived & matrix)

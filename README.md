@@ -56,7 +56,6 @@ All contributions welcome!  (With two caveats: they must be MPL2 licensed, and m
 - gather error messages from matio library
 - sparse matrix support
 - struct and cell support, read/write & parse
-- fill-out the data types for reading
 - some testing, any testing!
  - test against matio-1.3.4(?) because still shipping with RH6
 - eventually submit to Eigen for inclusion in unsupported(?)
