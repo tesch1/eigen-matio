@@ -10,7 +10,7 @@
 //
 #ifndef EIGEN_MATIO_MODULE
 #define EIGEN_MATIO_MODULE
-
+#include <sstream>
 #include "matio.h"
 #ifndef MATIO_VERSION
 #define MATIO_VERSION (MATIO_MAJOR_VERSION * 100 + MATIO_MINOR_VERSION * 10 + MATIO_RELEASE_LEVEL)
@@ -114,11 +114,12 @@ private:
   mat_ft _ft;
   int _mode;
   bool _written;
-  // \TODO - capture errors in std::string _errstr;
-  // return them from: const std::string & lasterr();
+  std::stringstream _errstr;
 
 public:
+
   MatioFile() : _file(NULL), _ft(MAT_FT_DEFAULT), _mode(0), _written(false) {}
+
   MatioFile(const char * filename,
             int mode = MAT_ACC_RDWR,
             bool create = true,
@@ -129,11 +130,16 @@ public:
     //Mat_LogInit("hi");
     open(filename, mode, create, fileversion, header);
   }
+
   ~MatioFile()
   {
     close();
   }
+
+  const std::string lasterr() { return _errstr.str(); }
+  
   mat_t * file() { return _file; }
+
   int open(const char * filename,
            int mode = MAT_ACC_RDWR,
            bool create = true,
@@ -151,7 +157,8 @@ public:
 #endif
     }
     if (NULL == _file) {
-      std::cout << "MatioFile::open() unable to open " << filename << "/" << fileversion << "\n";
+      _errstr.clear();
+      _errstr << "MatioFile::open() unable to open " << filename << "/" << fileversion << "\n";
       return -1;
     }
     _mode = mode;
@@ -174,7 +181,8 @@ public:
       Mat_Close(_file);
       _file = Mat_Open(filename.c_str(), _mode);
       if (NULL == _file) {
-        std::cout << "MatioFile() unable to reopen '" << filename << "'\n";
+        _errstr.clear();
+        _errstr << "MatioFile() unable to reopen '" << filename << "'\n";
         return -1;
       }
       _written = false;
@@ -193,7 +201,8 @@ public:
   write_mat(const char * matname, const Derived & matrix)
   {
     if (!_file || !matname) {
-      std::cout << "MatioFile.write_mat() unable to write matrix '" << matname << "'\n";
+      _errstr.clear();
+      _errstr << "MatioFile.write_mat() unable to write matrix '" << matname << "'\n";
       return -1;
     }
     typedef typename internal::matio_type<typename Derived::Scalar>::type mat_type;
@@ -235,14 +244,16 @@ public:
 
     var = Mat_VarCreate(matname, cid, tid, 2, dims, data, cxflag);
     if (NULL == var) {
-      std::cout << "write_mat() unable to create matrix\n";
+      _errstr.clear();
+      _errstr << "write_mat() unable to create matrix\n";
       return -1;
     }
 
     // \TODO - thread safety
     int status = Mat_VarWrite(_file, var, compression);
     if (status) {
-      std::cout << "write_mat() unable to put variable '" << matname << "'\n";
+      _errstr.clear();
+      _errstr << "write_mat() unable to put variable '" << matname << "'\n";
     }
     else
       _written = true;
@@ -260,6 +271,7 @@ private:
     Map<Matrix<data_t, Dynamic, Dynamic> > tmp((data_t *)var->data, var->dims[0], var->dims[1]);
     matrix = tmp.template cast<Scalar>();
   }
+
   template <class data_t, class Derived, class Scalar>
   void matrix_from_var(Derived & matrix, matvar_t * var, std::complex<Scalar> zero)
   {
@@ -280,24 +292,28 @@ public:
     if (_written)
       reopen();
     if (!_file || !matname) {
-      std::cout << "MatioFile.read_mat() unable to read file for matrix '" << matname << "'\n";
+      _errstr.clear();
+      _errstr << "MatioFile.read_mat() unable to read file for matrix '" << matname << "'\n";
       return -1;
     }
 
     matvar_t * var = Mat_VarRead(_file, matname);
     if (NULL == var) {
-      std::cout << "read_mat() unable to read matrix '" << matname << "'\n";
+      _errstr.clear();
+      _errstr << "read_mat() unable to read matrix '" << matname << "'\n";
       return -1;
     }
 
     if (var->rank != 2) {
-      std::cout << "read_mat() can only read rank-2 matrices: '" << matname << "':\n ";
+      _errstr.clear();
+      _errstr << "read_mat() can only read rank-2 matrices: '" << matname << "':\n ";
       Mat_VarPrint(var, 0);
       Mat_VarFree(var);
     }
 
     if (var->isComplex != NumTraits<typename Derived::Scalar>::IsComplex) {
-      std::cout << "read_mat() complex / real matrix mismatch\n ";
+      _errstr.clear();
+      _errstr << "read_mat() complex / real matrix mismatch\n ";
       Mat_VarPrint(var, 0);
       Mat_VarFree(var);
     }
@@ -322,7 +338,8 @@ public:
     MATIO_HANDLE_READ_TYPE(MAT_T_INT64);
     MATIO_HANDLE_READ_TYPE(MAT_T_UINT64);
     else {
-      std::cout << "read_mat() unrecognized matrix data_type '" << matname << "':\n ";
+      _errstr.clear();
+      _errstr << "read_mat() unrecognized matrix data_type '" << matname << "':\n ";
       Mat_VarPrint(var, 0);
       Mat_VarFree(var);
       return -1;
