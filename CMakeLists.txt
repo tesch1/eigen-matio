@@ -8,9 +8,13 @@ cmake_minimum_required (VERSION 2.6.8)
 #
 project (MATio CXX)
 
+set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Wpedantic")
 
 find_package (Eigen3 REQUIRED)
+find_package (Matio REQUIRED)
+
+include_directories (${EIGEN3_INCLUDE_DIRS})
 
 enable_testing ()
 
