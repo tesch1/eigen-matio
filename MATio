@@ -267,11 +267,64 @@ private:
     mat_complex_split_t * cs = (mat_complex_split_t *)var->data;
     Map<Matrix<data_t, Dynamic, Dynamic> > tmp_re((data_t *)cs->Re, var->dims[0], var->dims[1]);
     Map<Matrix<data_t, Dynamic, Dynamic> > tmp_im((data_t *)cs->Im, var->dims[0], var->dims[1]);
+    matrix.resize(var->dims[0], var->dims[1]);
     matrix.real() = tmp_re.template cast<Scalar>();
     matrix.imag() = tmp_im.template cast<Scalar>();
   }
 
 public:
+
+   template <class Derived>
+   int
+   read_mat(matvar_t * var, Derived & matrix)
+   { 
+     if (NULL == var) {
+       std::cout << "null pointer\n";
+       return -1;
+     }
+
+     if (var->rank != 2) {
+       std::cout << "read_mat() can only read rank-2 matrices: '" << var->name << "':\n ";
+       Mat_VarPrint(var, 0);
+       Mat_VarFree(var);
+     }
+
+     if (static_cast<bool>(var->isComplex) != static_cast<bool>(NumTraits<typename Derived::Scalar>::IsComplex)) {
+       std::cout << "read_mat() complex / real matrix mismatch\n ";
+       Mat_VarPrint(var, 0);
+       return -1;
+     }
+
+ #define MATIO_HANDLE_READ_TYPE(MAT_T_X)                                 \
+     else if (var->data_type == MAT_T_X                                  \
+              && var->class_type != MAT_C_SPARSE)                        \
+       do {                                                              \
+         typedef typename internal::type_matio<MAT_T_X>::type data_t;    \
+         typename Derived::Scalar ele_type;      \
+         matrix_from_var<data_t>(matrix, var, ele_type); \
+       } while (0)
+
+     if (0) {}
+     MATIO_HANDLE_READ_TYPE(MAT_T_INT8);
+     MATIO_HANDLE_READ_TYPE(MAT_T_UINT8);
+     MATIO_HANDLE_READ_TYPE(MAT_T_INT16);
+     MATIO_HANDLE_READ_TYPE(MAT_T_UINT16);
+     MATIO_HANDLE_READ_TYPE(MAT_T_INT32);
+     MATIO_HANDLE_READ_TYPE(MAT_T_UINT32);
+     MATIO_HANDLE_READ_TYPE(MAT_T_SINGLE);
+     MATIO_HANDLE_READ_TYPE(MAT_T_DOUBLE);
+     MATIO_HANDLE_READ_TYPE(MAT_T_INT64);
+     MATIO_HANDLE_READ_TYPE(MAT_T_UINT64);
+     else {
+       std::cout << "read_mat() unrecognized matrix data_type '" << var->name << "':\n ";
+       Mat_VarPrint(var, 0);
+       return -1;
+     }
+ #undef MATIO_HANDLE_READ_TYPE
+
+     return 0;
+   }
+
 
   template <class Derived>
   int
@@ -285,52 +338,15 @@ public:
     }
 
     matvar_t * var = Mat_VarRead(_file, matname);
-    if (NULL == var) {
-      std::cout << "read_mat() unable to read matrix '" << matname << "'\n";
-      return -1;
+    if (var){
+       int rez = read_mat(var, matrix);
+       Mat_VarFree(var);
+       return rez;
     }
-
-    if (var->rank != 2) {
-      std::cout << "read_mat() can only read rank-2 matrices: '" << matname << "':\n ";
-      Mat_VarPrint(var, 0);
-      Mat_VarFree(var);
+    else{
+       std::cout << "read_mat() unable to read matrix '" << matname << "'\n";
+       return -1;
     }
-
-    if (var->isComplex != NumTraits<typename Derived::Scalar>::IsComplex) {
-      std::cout << "read_mat() complex / real matrix mismatch\n ";
-      Mat_VarPrint(var, 0);
-      Mat_VarFree(var);
-    }
-
-#define MATIO_HANDLE_READ_TYPE(MAT_T_X)                                 \
-    else if (var->data_type == MAT_T_X                                  \
-             && var->class_type != MAT_C_SPARSE)                        \
-      do {                                                              \
-        typedef typename internal::type_matio<MAT_T_X>::type data_t;    \
-        matrix_from_var<data_t>(matrix, var, matrix(0,0));              \
-      } while (0)
-
-    if (0) {}
-    MATIO_HANDLE_READ_TYPE(MAT_T_INT8);
-    MATIO_HANDLE_READ_TYPE(MAT_T_UINT8);
-    MATIO_HANDLE_READ_TYPE(MAT_T_INT16);
-    MATIO_HANDLE_READ_TYPE(MAT_T_UINT16);
-    MATIO_HANDLE_READ_TYPE(MAT_T_INT32);
-    MATIO_HANDLE_READ_TYPE(MAT_T_UINT32);
-    MATIO_HANDLE_READ_TYPE(MAT_T_SINGLE);
-    MATIO_HANDLE_READ_TYPE(MAT_T_DOUBLE);
-    MATIO_HANDLE_READ_TYPE(MAT_T_INT64);
-    MATIO_HANDLE_READ_TYPE(MAT_T_UINT64);
-    else {
-      std::cout << "read_mat() unrecognized matrix data_type '" << matname << "':\n ";
-      Mat_VarPrint(var, 0);
-      Mat_VarFree(var);
-      return -1;
-    }
-#undef MATIO_HANDLE_READ_TYPE
-
-    Mat_VarFree(var);
-    return 0;
   }
 };
 
@@ -353,3 +369,4 @@ read_mat(const char * filename, const char * matname, Derived & matrix)
 }
 
 #endif // EIGEN_MATIO_MODULE
+
