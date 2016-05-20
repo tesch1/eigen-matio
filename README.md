@@ -63,10 +63,18 @@ All contributions welcome!  (With two caveats: they must be MPL2 licensed, and m
 # License
 Mozilla 2.0, like the rest of Eigen.
 
+# To install
+```
+mkdir build
+cd build
+cmake ..
+sudo make install
+```
+
 # Read Test (linux platforms)
--Tests that MATio can read 1D and 2D arrays of real and complex doubles
--From the test directory, run build.sh
--Then run ./matio_read_test
+- Tests that MATio can read 1D and 2D arrays of real and complex doubles
+- From the test directory, run build.sh
+- Then run ./matio_read_test
 - Should produce the following output
 ```
 --------
@@ -100,4 +108,3 @@ c42
   (-0.1798,-0.983703)  (0.181525,-0.983386)
   (0.783322,0.621616) (-0.217916,-0.975968)
 ```
- 

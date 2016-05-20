@@ -6,7 +6,7 @@
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/Dense>
 #include <iostream>
-#include "../MATio"
+#include <MATio/MATio.hpp>
 
 using namespace Eigen;
 
