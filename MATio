@@ -267,6 +267,7 @@ private:
     mat_complex_split_t * cs = (mat_complex_split_t *)var->data;
     Map<Matrix<data_t, Dynamic, Dynamic> > tmp_re((data_t *)cs->Re, var->dims[0], var->dims[1]);
     Map<Matrix<data_t, Dynamic, Dynamic> > tmp_im((data_t *)cs->Im, var->dims[0], var->dims[1]);
+    matrix.resize(var->dims[0], var->dims[1]);
     matrix.real() = tmp_re.template cast<Scalar>();
     matrix.imag() = tmp_im.template cast<Scalar>();
   }
