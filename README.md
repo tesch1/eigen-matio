@@ -19,11 +19,11 @@ using namespace Eigen;
 Matrix3f ff;
 
 // read it into floats
-mat_read("data.mat", "ff", ff);
+read_mat("data.mat", "ff", ff);
 std::cout << "ff=" << ff << std::endl;
 
 // write it out as doubles
-mat_write("data.mat", "dd", ff.cast<double>());
+write_mat("data.mat", "dd", ff.cast<double>());
 ```
 
 Using the MatioFile class, potentially more efficient:
@@ -39,13 +39,13 @@ MatioFile file("data.mat");
 Matrix3f ff;
 
 // read it into floats
-file.mat_read("ff", ff);
+file.read_mat("ff", ff);
 std::cout << "ff=" << ff << std::endl;
 
 ff = Matrix3f::Random();
 
 // write it out as doubles
-file.mat_write("dd", ff.cast<double>());
+file.write_mat("dd", ff.cast<double>());
 ```
 
 # Contributing
