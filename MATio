@@ -139,6 +139,8 @@ public:
   const std::string lasterr() { return _errstr.str(); }
   
   mat_t * file() { return _file; }
+  
+  explicit operator bool() const { return _file != NULL && _errstr.str().size() == 0; }
 
   int open(const char * filename,
            int mode = MAT_ACC_RDWR,

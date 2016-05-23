@@ -13,8 +13,10 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Wpedantic")
 
 find_package (Eigen3 REQUIRED)
 find_package (Matio REQUIRED)
+find_package (HDF5 REQUIRED)
 
 include_directories (${EIGEN3_INCLUDE_DIRS})
+include_directories (${MATIO_INCLUDE_DIRS})
 
 enable_testing ()
 
