@@ -137,9 +137,9 @@ public:
   }
 
   const std::string lasterr() { return _errstr.str(); }
-  
+
   mat_t * file() { return _file; }
-  
+
   explicit operator bool() const { return _file != NULL && _errstr.str().size() == 0; }
 
   int open(const char * filename,
@@ -281,6 +281,7 @@ private:
     mat_complex_split_t * cs = (mat_complex_split_t *)var->data;
     Map<Matrix<data_t, Dynamic, Dynamic> > tmp_re((data_t *)cs->Re, var->dims[0], var->dims[1]);
     Map<Matrix<data_t, Dynamic, Dynamic> > tmp_im((data_t *)cs->Im, var->dims[0], var->dims[1]);
+    std::cout << "size: " << var->dims[0] << ", " << var->dims[1] << std::endl;
     matrix.resize(var->dims[0], var->dims[1]);
     matrix.real() = tmp_re.template cast<Scalar>();
     matrix.imag() = tmp_im.template cast<Scalar>();
@@ -291,7 +292,7 @@ public:
   template <class Derived>
   int
   read_mat(const char * matname, Derived & matrix)
-  { 
+  {
     if (_written)
       reopen();
     if (!_file || !matname) {
@@ -312,22 +313,25 @@ public:
       _errstr << "read_mat() can only read rank-2 matrices: '" << matname << "':\n ";
       Mat_VarPrint(var, 0);
       Mat_VarFree(var);
+      return -1;
     }
 
-    if (var->isComplex != NumTraits<typename Derived::Scalar>::IsComplex) {
+    if (static_cast<bool>(var->isComplex) != static_cast<bool>(NumTraits<typename Derived::Scalar>::IsComplex)) {
       _errstr.clear();
       _errstr << "read_mat() complex / real matrix mismatch\n ";
       Mat_VarPrint(var, 0);
       Mat_VarFree(var);
+      return -1;
     }
 
-#define MATIO_HANDLE_READ_TYPE(MAT_T_X)                                 \
-    else if (var->data_type == MAT_T_X                                  \
-             && var->class_type != MAT_C_SPARSE)                        \
-      do {                                                              \
-        typedef typename internal::type_matio<MAT_T_X>::type data_t;    \
-        matrix_from_var<data_t>(matrix, var, matrix(0,0));              \
-      } while (0)
+ #define MATIO_HANDLE_READ_TYPE(MAT_T_X)                                 \
+     else if (var->data_type == MAT_T_X                                  \
+              && var->class_type != MAT_C_SPARSE)                        \
+       do {                                                              \
+         typedef typename internal::type_matio<MAT_T_X>::type data_t;    \
+         typename Derived::Scalar ele_type;      \
+         matrix_from_var<data_t>(matrix, var, ele_type); \
+       } while (0)
 
     if (0) {}
     MATIO_HANDLE_READ_TYPE(MAT_T_INT8);
