@@ -21,12 +21,11 @@ include_directories(include)
 include_directories (${EIGEN3_INCLUDE_DIRS})
 include_directories (${MATIO_INCLUDE_DIRS})
 
-enable_testing ()
-
-
-
 if(BUILD_TESTS)
+  enable_testing ()
   add_definitions(-DBOOST_TEST_DYN_LINK)
   find_package(Boost COMPONENTS ${BOOST_COMPONENTS} unit_test_framework REQUIRED)
   add_subdirectory (tests)
 endif()
+
+install (DIRECTORY "include/MATio" DESTINATION include)
