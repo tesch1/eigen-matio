@@ -8,6 +8,8 @@ cmake_minimum_required (VERSION 2.6.8)
 #
 project (MATio CXX)
 
+OPTION(BUILD_TESTS "Build unit tests" ON)
+
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11 -Wall -Wpedantic")
 
@@ -21,5 +23,10 @@ include_directories (${MATIO_INCLUDE_DIRS})
 
 enable_testing ()
 
-add_subdirectory (tests)
-#add_subdirectory (examples)
+
+
+if(BUILD_TESTS)
+  add_definitions(-DBOOST_TEST_DYN_LINK)
+  find_package(Boost COMPONENTS ${BOOST_COMPONENTS} unit_test_framework REQUIRED)
+  add_subdirectory (tests)
+endif()
