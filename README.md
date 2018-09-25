@@ -3,12 +3,48 @@
 Eigen matrices to/from matlab data files, using the ['matio'](http://sourceforge.net/projects/matio/)
 library as a backend.  It would be nice to incorporate this with Eigen someday.
 
+Also a single-file header `MexEig` for use in mex files to convert
+Eigen matrices to/from mxArray structures.
+
 # Usage
-there are two interfaces: 
+there are two functions in MexEig:
+- EigenToMxArray()
+- MxArrayToEigen()
+
+there are two interfaces in MATio:
 - a MatioFile() class
 - bare functions that hide the MatioFile() class
 
-Using the bare functions:
+Using the functions in MexEig in a mex .cpp file, just a simple
+example that copies the input to the output:
+
+```cpp
+#include "mex.h"
+#include <iostream>
+#include <Eigen/Core>
+#include "MexEig"
+
+void mexFunction(int nlhs, mxArray *plhs[],
+                 int nrhs, const mxArray *prhs[])
+{
+  try {
+    if (nrhs != 1)
+      throw std::invalid_argument("requires one input arg");
+    if (nlhs != 1)
+      throw std::invalid_argument("requires one ouput arg");
+
+    Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> x;
+    MxArrayToEigen(x, prhs[0]);
+    plhs[0] = EigenToMxArray(x);
+  }
+  catch (std::exception & ex) {
+    mexErrMsgIdAndTxt("tmp:error", ex.what());
+  }
+}
+```
+
+
+Using the bare functions in MATio:
 ```cpp
 #include "Eigen/Core"
 #include "Eigen/Dense"
