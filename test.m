@@ -8,4 +8,4 @@ else
 end
     
 a = mextest([22 43])
-b = mextest([22 43+i])
+b = mextest([22 43+1i])
