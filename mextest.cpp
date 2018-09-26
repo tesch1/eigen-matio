@@ -23,8 +23,8 @@ void mexFunction(int nlhs, mxArray *plhs[],
   try {
     if (nrhs != 1)
       throw std::invalid_argument("requires one input arg");
-    if (nlhs != 1)
-      throw std::invalid_argument("requires one ouput arg");
+    //if (nlhs != 1)
+    //  throw std::invalid_argument("requires one ouput arg");
 
     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> x;
     MxArrayToEigen(x, prhs[0]);

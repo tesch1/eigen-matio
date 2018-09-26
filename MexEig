@@ -12,6 +12,7 @@
 #define EIGEN_MEXEIG_MODULE
 #include "mex.h"
 #include <complex>
+#include <exception>
 #include <type_traits>
 #include <Eigen/Core>
 
@@ -20,7 +21,6 @@
 #endif
 
 namespace Eigen {
-
 
 namespace internal {
 
@@ -33,7 +33,7 @@ template <typename Tp> struct mex_classid { static const mxClassID cid = mxUNKNO
 //template <> struct mex_classid<char>     { static const mxClassID cid = mxSTRUCT_CLASS; };
 template <> struct mex_classid<bool>    { static const mxClassID cid = mxLOGICAL_CLASS; };
 template <> struct mex_classid<char>    { static const mxClassID cid = mxCHAR_CLASS; };
-template <> struct mex_classid<void>    { static const mxClassID cid = mxVOID_CLASS; };
+//template <> struct mex_classid<void>    { static const mxClassID cid = mxVOID_CLASS; };
 template <> struct mex_classid<double>  { static const mxClassID cid = mxDOUBLE_CLASS; };
 template <> struct mex_classid<float>   { static const mxClassID cid = mxSINGLE_CLASS; };
 template <> struct mex_classid<int8_t>  { static const mxClassID cid = mxINT8_CLASS; };
@@ -50,7 +50,7 @@ template <typename Tp> struct mex_classid<std::complex<Tp> > : public mex_classi
 template <int classid = -1> struct classid_type {};
 template <> struct classid_type<mxLOGICAL_CLASS>{ typedef bool type; };
 template <> struct classid_type<mxCHAR_CLASS>   { typedef char type; };
-template <> struct classid_type<mxVOID_CLASS>   { typedef void type; };
+//template <> struct classid_type<mxVOID_CLASS>   { typedef void type; };
 template <> struct classid_type<mxDOUBLE_CLASS> { typedef double type; };
 template <> struct classid_type<mxSINGLE_CLASS> { typedef float type; };
 template <> struct classid_type<mxINT8_CLASS>   { typedef int8_t type; };
@@ -65,14 +65,14 @@ template <> struct classid_type<mxUINT64_CLASS> { typedef uint64_t type; };
 }
 
 template <class Derived>
-void MxArrayToEigen(Eigen::MatrixBase<Derived> const & emm, const mxArray * a)
+void MxArrayToEigen(Derived & em, const mxArray * a)
 {
   typedef typename Derived::Scalar Scalar;
   typedef typename Derived::RealScalar RealScalar;
-  auto & em = const_cast<Eigen::MatrixBase<Derived> & >(emm);
-
-  mexPrintf("resize: %d %d\n", mxGetM(a), mxGetN(a));
-  mexPrintf("[0]: %f \n", mxGetScalar(a));
+  //auto & m = const_cast<Eigen::MatrixBase<Derived> & >(emm);
+  //Derived em;
+  //mexPrintf("resize: %d %d\n", mxGetM(a), mxGetN(a));
+  //mexPrintf("[0]: %f \n", mxGetScalar(a));
   em.resize(mxGetM(a), mxGetN(a));
   mxClassID classid = mxGetClassID(a);
   bool iscomplex = internal::is_complex<Scalar>::value;
@@ -109,6 +109,7 @@ void MxArrayToEigen(Eigen::MatrixBase<Derived> const & emm, const mxArray * a)
   else {
     throw std::invalid_argument("unknown ClassID, HANDLE_TYPE failed");
   }
+  //m = em;
 }
 
 // todo: take EigenBase and detect SparseMatrix
@@ -127,7 +128,7 @@ mxArray * EigenToMxArray(MatrixBase<Derived> const & em)
   switch (internal::mex_classid<Scalar>::cid) {
   case mxLOGICAL_CLASS:
   case mxCHAR_CLASS:
-  case mxVOID_CLASS:
+    //  case mxVOID_CLASS:
   case mxDOUBLE_CLASS:
   case mxSINGLE_CLASS:
   case mxINT8_CLASS:
