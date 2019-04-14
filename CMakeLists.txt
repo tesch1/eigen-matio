@@ -20,10 +20,8 @@ include (ExternalProject)
 #set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wno-int-in-bool-context") ## REMOVE WITH EIGEN 3.3.5 ##
 ExternalProject_Add (eigenX
   PREFIX eigenX
-#  URL http://bitbucket.org/eigen/eigen/get/3.3.4.tar.bz2
-#  URL_HASH MD5=a7aab9f758249b86c93221ad417fbe18
-  URL http://bitbucket.org/eigen/eigen/get/3.3.5.tar.bz2
-  URL_HASH MD5=e83549a79d1b721da0f8899ab34edf95
+  URL http://bitbucket.org/eigen/eigen/get/3.3.7.tar.bz2
+  #URL_HASH MD5=e83549a79d1b721da0f8899ab34edf95
   DOWNLOAD_DIR "$ENV{HOME}/Downloads"
   CONFIGURE_COMMAND ""
   BUILD_COMMAND ""
@@ -43,13 +41,13 @@ ExternalProject_Add (matioX
   URL_HASH MD5=2968b5a95f05fab8b79ec87f9a6c0cac
   DOWNLOAD_DIR "$ENV{HOME}/Downloads"
   #CONFIGURE_COMMAND "pwd; ./configure" --prefix=<INSTALL_DIR> --enable-shared=no
-  CONFIGURE_COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/matioX/src/matioX/configure" --prefix=<INSTALL_DIR> --enable-shared=no
+  CONFIGURE_COMMAND "${CMAKE_BINARY_DIR}/matioX/src/matioX/configure" --prefix=<INSTALL_DIR> --enable-shared=no
   #BUILD_COMMAND ""
   #INSTALL_COMMAND ""
   LOG_DOWNLOAD ON
   )
-set (MATIO_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/matioX/include")
-set (MATIO_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/matioX/lib/libmatio.a")
+set (MATIO_INCLUDE_DIRS "${CMAKE_BINARY_DIR}/matioX/include")
+set (MATIO_LIBRARIES "${CMAKE_BINARY_DIR}/matioX/lib/libmatio.a")
 include_directories ("${MATIO_INCLUDE_DIRS}")
 
 include_directories (${MATIO_INCLUDE_DIRS})

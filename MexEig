@@ -64,16 +64,39 @@ template <> struct classid_type<mxUINT64_CLASS> { typedef uint64_t type; };
 
 }
 
+// complex-matrix
+template <class T, class Derived>
+void AssignImag(std::true_type, Derived & M, const mxArray * a)
+{
+  typedef typename Derived::RealScalar Real;
+  Map<Matrix<T, Dynamic, Dynamic> > tmp((T *)mxGetPr(a), mxGetM(a), mxGetN(a));
+  M.real() = tmp.template cast<Real>();
+  Map<Matrix<T, Dynamic, Dynamic> > tmp2((T *)mxGetPi(a), mxGetM(a), mxGetN(a));
+  M.imag() = tmp2.template cast<Real>();
+}
+
+// real-matrix
+template <class T, class Derived>
+void AssignImag(std::false_type, Derived & M, const mxArray * a)
+{
+  typedef typename Derived::RealScalar Real;
+  Map<Matrix<T, Dynamic, Dynamic> > tmp((T *)mxGetPr(a), mxGetM(a), mxGetN(a));
+  M.real() = tmp.template cast<Real>();
+}
+
 template <class Derived>
 void MxArrayToEigen(Derived & em, const mxArray * a)
 {
   typedef typename Derived::Scalar Scalar;
-  typedef typename Derived::RealScalar RealScalar;
   //auto & m = const_cast<Eigen::MatrixBase<Derived> & >(emm);
   //Derived em;
   //mexPrintf("resize: %d %d\n", mxGetM(a), mxGetN(a));
   //mexPrintf("[0]: %f \n", mxGetScalar(a));
   em.resize(mxGetM(a), mxGetN(a));
+
+  if (em.rows() != (Eigen::Index)mxGetM(a) || em.cols() != (Eigen::Index)mxGetN(a))
+    throw std::invalid_argument("tried to assign wrong sized matrix to fixed-size EigenMatrix");
+
   mxClassID classid = mxGetClassID(a);
   bool iscomplex = internal::is_complex<Scalar>::value;
 
@@ -84,12 +107,7 @@ void MxArrayToEigen(Derived & em, const mxArray * a)
   else if (classid == CLASSID)                                          \
     do {                                                                \
       typedef typename internal::classid_type<CLASSID>::type data_t;    \
-      Map<Matrix<data_t, Dynamic, Dynamic> > tmp((data_t *)mxGetPr(a), mxGetM(a), mxGetN(a)); \
-      em = tmp.template cast<RealScalar>();                             \
-      if (mxIsComplex(a)) {                                             \
-        Map<Matrix<data_t, Dynamic, Dynamic> > tmp2((data_t *)mxGetPi(a), mxGetM(a), mxGetN(a)); \
-        em.imag() = tmp2.template cast<RealScalar>();                   \
-      }                                                                 \
+      AssignImag<data_t>(typename internal::is_complex<Scalar>{}, em, a); \
     } while (0)
 
   if (0) ;
@@ -117,7 +135,7 @@ template <class Derived>
 mxArray * EigenToMxArray(MatrixBase<Derived> const & em)
 {
   typedef typename Derived::Scalar Scalar;
-  typedef typename Derived::RealScalar RealScalar;
+  typedef typename Derived::RealScalar Real;
   mxArray * a;
   mwSize ndim = 2;
   mwSize M = em.rows();
@@ -152,9 +170,9 @@ mxArray * EigenToMxArray(MatrixBase<Derived> const & em)
       tmp = em;
     }
     else {
-      Map<Matrix<RealScalar, Dynamic, Dynamic> > tmp_re((RealScalar *)mxGetPr(a), M, N);
+      Map<Matrix<Real, Dynamic, Dynamic> > tmp_re((Real *)mxGetPr(a), M, N);
       tmp_re = em.real();
-      Map<Matrix<RealScalar, Dynamic, Dynamic> > tmp_im((RealScalar *)mxGetPi(a), M, N);
+      Map<Matrix<Real, Dynamic, Dynamic> > tmp_im((Real *)mxGetPi(a), M, N);
       tmp_im = em.imag();
     }
     break;
