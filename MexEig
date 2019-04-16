@@ -1,8 +1,9 @@
 // -*- c++ -*-
-// This file is part of Eigen, a lightweight C++ template library
-// for linear algebra.
 //
-// Copyright (C) 2015 Michael Tesch, tesch1 (a) gmail com
+// This file is part of eigen-matio, a lightweight C++ template
+// library for reading data files into Eigen matrices.
+//
+// Copyright (C) 2019 Michael Tesch, tesch1 (a) gmail com
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
@@ -14,7 +15,7 @@
 #include <complex>
 #include <exception>
 #include <type_traits>
-#include <Eigen/Core>
+#include <Eigen/Dense>
 
 #ifndef MX_HAS_INTERLEAVED_COMPLEX
 #define MX_HAS_INTERLEAVED_COMPLEX 0

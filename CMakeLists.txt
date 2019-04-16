@@ -1,4 +1,13 @@
 #
+# This file is part of eigen-matio, a lightweight C++ template
+# library for reading data files into Eigen matrices.
+#
+# Copyright (C) 2019 Michael Tesch, tesch1 (a) gmail com
+#
+# This Source Code Form is subject to the terms of the Mozilla
+# Public License v. 2.0. If a copy of the MPL was not distributed
+# with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
 # CMake for MATio
 #
 cmake_minimum_required (VERSION 2.6.8)
@@ -37,8 +46,8 @@ include_directories ("${EIGEN3_INCLUDE_DIRS}")
 #
 ExternalProject_Add (matioX
   PREFIX matioX
-  URL https://sourceforge.net/projects/matio/files/matio/1.5.12/matio-1.5.12.tar.gz/download
-  URL_HASH MD5=2968b5a95f05fab8b79ec87f9a6c0cac
+  URL https://github.com/tbeu/matio/releases/download/v1.5.15/matio-1.5.15.tar.gz
+  #URL_HASH MD5=2968b5a95f05fab8b79ec87f9a6c0cac
   DOWNLOAD_DIR "$ENV{HOME}/Downloads"
   #CONFIGURE_COMMAND "pwd; ./configure" --prefix=<INSTALL_DIR> --enable-shared=no
   CONFIGURE_COMMAND "${CMAKE_BINARY_DIR}/matioX/src/matioX/configure" --prefix=<INSTALL_DIR> --enable-shared=no
@@ -48,9 +57,12 @@ ExternalProject_Add (matioX
   )
 set (MATIO_INCLUDE_DIRS "${CMAKE_BINARY_DIR}/matioX/include")
 set (MATIO_LIBRARIES "${CMAKE_BINARY_DIR}/matioX/lib/libmatio.a")
-include_directories ("${MATIO_INCLUDE_DIRS}")
 
+#
+# Include dirs
+#
 include_directories (${MATIO_INCLUDE_DIRS})
+include_directories (${CMAKE_SOURCE_DIR})
 
 enable_testing ()
 

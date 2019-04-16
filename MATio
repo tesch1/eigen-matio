@@ -1,6 +1,7 @@
 // -*- c++ -*-
-// This file is part of Eigen, a lightweight C++ template library
-// for linear algebra.
+//
+// This file is part of eigen-matio, a lightweight C++ template
+// library for reading data files into Eigen matrices.
 //
 // Copyright (C) 2015 Michael Tesch, tesch1 (a) gmail com
 //
@@ -175,7 +176,8 @@ public:
     _file = NULL;
   }
 
-  // in case reading something after writing it (fflush / fsync would be better)
+  // in case reading the file after writing it (fflush / fsync would
+  // be better)
   int reopen()
   {
     if (_file) {
@@ -282,6 +284,8 @@ private:
     Map<Matrix<data_t, Dynamic, Dynamic> > tmp_re((data_t *)cs->Re, var->dims[0], var->dims[1]);
     Map<Matrix<data_t, Dynamic, Dynamic> > tmp_im((data_t *)cs->Im, var->dims[0], var->dims[1]);
     matrix.resize(var->dims[0], var->dims[1]);
+    if (matrix.rows() != var->dims[0] || matrix.cols() != var->dims[1])
+      throw std::invalid_argument("Unable to resize dest matrix for loading.");
     matrix.real() = tmp_re.template cast<Scalar>();
     matrix.imag() = tmp_im.template cast<Scalar>();
   }

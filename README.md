@@ -1,19 +1,25 @@
-# eigen-matio
-[Eigen](http://http://eigen.tuxfamily.org) header-only library for reading and writing
-Eigen matrices to/from matlab data files, using the ['matio'](http://sourceforge.net/projects/matio/)
-library as a backend.  It would be nice to incorporate this with Eigen someday.
+# eigen-matio (MATio)
 
-Also a single-file header `MexEig` for use in mex files to convert
-Eigen matrices to/from mxArray structures.
+[Eigen](http://http://eigen.tuxfamily.org) header-only library for
+reading and writing Eigen matrices to/from matlab data files, using
+the ['matio'](http://sourceforge.net/projects/matio/) library as a
+backend.  It would be nice to incorporate this with Eigen someday.
+
+# eigen-mexeig (MexEig)
+
+A single-file-header `MexEig` for use in mex files to convert Eigen
+matrices to/from mxArray structures.
 
 # Usage
 there are two functions in MexEig:
-- EigenToMxArray()
-- MxArrayToEigen()
+- EigenToMxArray(mxArray * dst, const Matrix & src)
+- MxArrayToEigen(Matrix & dst, const mxArray * src)
 
 there are two interfaces in MATio:
-- a MatioFile() class
+- a MatioFile() class that wraps a matlab data file
 - bare functions that hide the MatioFile() class
+ - mat_read(filename, matrixname, Matrix)
+ - mat_write(filename, matrixname, Matrix)
 
 Using the functions in MexEig in a mex .cpp file, just a simple
 example that copies the input to the output:
@@ -63,6 +69,7 @@ write_mat("data.mat", "dd", ff.cast<double>());
 ```
 
 Using the MatioFile class, potentially more efficient:
+
 ```cpp
 #include "Eigen/Core"
 #include "Eigen/Dense"
@@ -84,15 +91,32 @@ ff = Matrix3f::Random();
 file.write_mat("dd", ff.cast<double>());
 ```
 
+# Building
+
+```sh
+git clone git@github.com:tesch1/eigen-matio.git
+cd eigen-matio
+cmake -Bbuild .
+cmake --build build
+cmake --build build --target test
+```
+
+# Octave test
+
+There's a [small example](./tests/test.m) showing how to build an
+octave module using [MexEig](./MexEig)
+
 # Contributing
-All contributions welcome!  (With two caveats: they must be MPL2 licensed, and maintain the same code formatting.)
+
+Contributions welcome.  They must be MPL2 licensed and maintain the
+same code formatting.
 
 # TODO
 - error checking
 - gather error messages from matio library
 - sparse matrix support
 - struct and cell support, read/write & parse
-- some testing, any testing!
+- more testing
  - test against matio-1.3.4(?) because still shipping with RH6
 - eventually submit to Eigen for inclusion in unsupported(?)
 
