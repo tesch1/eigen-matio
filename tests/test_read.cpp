@@ -18,20 +18,28 @@
 
 using namespace Eigen;
 
+const char * datafile = "../tests/data.mat";
+
 TEST(read, float) {
   Matrix3f ff;
-  read_mat("data.mat", "ff", ff);
+  MatrixXf ffx;
+  EXPECT_EQ(-1, read_mat(datafile, "ff", ff));
+  EXPECT_EQ( 0, read_mat(datafile, "ff", ffx));
 }
 TEST(read, double) {
   Matrix3d dd;
-  read_mat("data.mat", "dd", dd);
+  MatrixXd ddx;
+  Matrix<double,2,4> dd24;
+  EXPECT_EQ(-1, read_mat(datafile, "dd", dd));
+  EXPECT_EQ(0, read_mat(datafile, "dd", ddx));
+  EXPECT_EQ(0, read_mat(datafile, "dd", dd24));
 }
 TEST(rw, float) {
-  Matrix3f ff;
-  Matrix3f off;
-  read_mat("data.mat", "ff", ff);
-  write_mat("out.mat", "off", ff);
-  read_mat("data.mat", "off", off);
+  MatrixXf ff;
+  MatrixXf off;
+  ASSERT_EQ(0, read_mat(datafile, "ff", ff));
+  ASSERT_EQ(0, write_mat("out.mat", "off", ff));
+  ASSERT_EQ(0, read_mat("out.mat", "off", off));
   ASSERT_NEAR((ff - off).norm(), 0, 1e-7);
 }
 

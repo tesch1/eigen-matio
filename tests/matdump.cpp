@@ -19,15 +19,24 @@ int main(int argc, char * argv[])
 {
   const char * filename = "../tests/data.mat";
   const char * objname = "dd";
-  for (int i = 0; i < argc; i++) {
-    if (i < argc-1)
+
+  for (int i = 1; i < argc; i++) {
+    filename = argv[i];
+    if (i < argc-1) {
       objname = argv[i+1];
+      i++;
+    }
+
     // read
     MatioFile f(filename);
     MatrixXd M;
-    if (f.read_mat(objname, M))
-      std::cout << "error: " << f.lasterr() << "\n";
-    std::cout << objname << " = " << M << "\n";
+    if (f) {
+      if (f.read_mat(objname, M))
+        std::cout << "error: " << f.lasterr() << "\n";
+      else
+        std::cout << objname << " = " << M << "\n";
+    }
+    
     // next
     filename = argv[i];
   }

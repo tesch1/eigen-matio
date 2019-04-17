@@ -106,6 +106,11 @@ template <> struct type_matio<MAT_T_UINT64> { typedef uint64_t type; };
 
 template <> struct class_matio<MAT_C_DOUBLE> { typedef double type; };
 
+/// Check if T is std::complex<>, match non- std::complex<>.
+template <class T> struct is_complex : std::false_type {};
+/// Check if T is std::complex<>, match std::complex<>.
+template <class T> struct is_complex<std::complex<T> > : std::true_type {};
+
 } // Eigen::internal::
 
 class MatioFile {
@@ -161,7 +166,7 @@ public:
     }
     if (NULL == _file) {
       _errstr.clear();
-      _errstr << "MatioFile::open() unable to open " << filename << "/" << fileversion << "\n";
+      _errstr << "unable to open " << filename << "/" << fileversion << "\n";
       return -1;
     }
     _mode = mode;
@@ -186,7 +191,7 @@ public:
       _file = Mat_Open(filename.c_str(), _mode);
       if (NULL == _file) {
         _errstr.clear();
-        _errstr << "MatioFile() unable to reopen '" << filename << "'\n";
+        _errstr << "unable to reopen '" << filename << "'\n";
         return -1;
       }
       _written = false;
@@ -206,7 +211,7 @@ public:
   {
     if (!_file || !matname) {
       _errstr.clear();
-      _errstr << "MatioFile.write_mat() unable to write matrix '" << matname << "'\n";
+      _errstr << "unable to write matrix '" << matname << "'\n";
       return -1;
     }
     typedef typename internal::matio_type<typename Derived::Scalar>::type mat_type;
@@ -249,7 +254,7 @@ public:
     var = Mat_VarCreate(matname, cid, tid, 2, dims, data, cxflag);
     if (NULL == var) {
       _errstr.clear();
-      _errstr << "write_mat() unable to create matrix\n";
+      _errstr << "unable to create matrix\n";
       return -1;
     }
 
@@ -257,7 +262,7 @@ public:
     int status = Mat_VarWrite(_file, var, compression);
     if (status) {
       _errstr.clear();
-      _errstr << "write_mat() unable to put variable '" << matname << "'\n";
+      _errstr << "unable to put variable '" << matname << "'\n";
     }
     else
       _written = true;
@@ -268,24 +273,21 @@ public:
 
 private:
 
-  template <class data_t, class Derived, class Scalar>
-  void matrix_from_var(Derived & matrix, matvar_t * var, Scalar zero)
+  template <class data_t, class Derived>
+  void matrix_from_var(Derived & matrix, matvar_t * var, std::false_type)
   {
-    (void)zero;
+    typedef typename Derived::Scalar Scalar;
     Map<Matrix<data_t, Dynamic, Dynamic> > tmp((data_t *)var->data, var->dims[0], var->dims[1]);
     matrix = tmp.template cast<Scalar>();
   }
 
-  template <class data_t, class Derived, class Scalar>
-  void matrix_from_var(Derived & matrix, matvar_t * var, std::complex<Scalar> zero)
+  template <class data_t, class Derived>
+  void matrix_from_var(Derived & matrix, matvar_t * var, std::true_type)
   {
-    (void)zero;
+    typedef typename Derived::Scalar Scalar;
     mat_complex_split_t * cs = (mat_complex_split_t *)var->data;
     Map<Matrix<data_t, Dynamic, Dynamic> > tmp_re((data_t *)cs->Re, var->dims[0], var->dims[1]);
     Map<Matrix<data_t, Dynamic, Dynamic> > tmp_im((data_t *)cs->Im, var->dims[0], var->dims[1]);
-    matrix.resize(var->dims[0], var->dims[1]);
-    if (matrix.rows() != var->dims[0] || matrix.cols() != var->dims[1])
-      throw std::invalid_argument("Unable to resize dest matrix for loading.");
     matrix.real() = tmp_re.template cast<Scalar>();
     matrix.imag() = tmp_im.template cast<Scalar>();
   }
@@ -296,41 +298,52 @@ public:
   int
   read_mat(const char * matname, Derived & matrix)
   { 
+    _errstr.clear();
     if (_written)
       reopen();
     if (!_file || !matname) {
       _errstr.clear();
-      _errstr << "MatioFile.read_mat() unable to read file for matrix '" << matname << "'\n";
+      _errstr << "unable to read file for matrix '" << matname << "'\n";
       return -1;
     }
 
     matvar_t * var = Mat_VarRead(_file, matname);
     if (NULL == var) {
-      _errstr.clear();
-      _errstr << "read_mat() unable to read matrix '" << matname << "'\n";
+      _errstr << "unable to read matrix '" << matname << "'\n";
       return -1;
     }
 
     if (var->rank != 2) {
-      _errstr.clear();
-      _errstr << "read_mat() can only read rank-2 matrices: '" << matname << "':\n ";
-      Mat_VarPrint(var, 0);
+      _errstr << "can only read rank-2 matrices: '" << matname << "':\n ";
       Mat_VarFree(var);
+      return -1;
     }
 
     if (var->isComplex != NumTraits<typename Derived::Scalar>::IsComplex) {
-      _errstr.clear();
-      _errstr << "read_mat() complex / real matrix mismatch\n ";
-      Mat_VarPrint(var, 0);
+      _errstr << "unable to mix real/complex matrices: '" << matname << "':\n ";
       Mat_VarFree(var);
+      return -1;
     }
+
+    if ((size_t)matrix.rows() != var->dims[0] && Derived::RowsAtCompileTime != Eigen::Dynamic) {
+      Mat_VarFree(var);
+      return -1;
+    }
+
+    if ((size_t)matrix.cols() != var->dims[1] && Derived::ColsAtCompileTime != Eigen::Dynamic) {
+      Mat_VarFree(var);
+      return -1;
+    }
+
+    matrix.resize(var->dims[0], var->dims[1]);
 
 #define MATIO_HANDLE_READ_TYPE(MAT_T_X)                                 \
     else if (var->data_type == MAT_T_X                                  \
              && var->class_type != MAT_C_SPARSE)                        \
       do {                                                              \
         typedef typename internal::type_matio<MAT_T_X>::type data_t;    \
-        matrix_from_var<data_t>(matrix, var, matrix(0,0));              \
+        matrix_from_var<data_t>(matrix, var,                            \
+                                internal::is_complex<typename Derived::Scalar>{}); \
       } while (0)
 
     if (0) {}
@@ -345,9 +358,7 @@ public:
     MATIO_HANDLE_READ_TYPE(MAT_T_INT64);
     MATIO_HANDLE_READ_TYPE(MAT_T_UINT64);
     else {
-      _errstr.clear();
       _errstr << "read_mat() unrecognized matrix data_type '" << matname << "':\n ";
-      Mat_VarPrint(var, 0);
       Mat_VarFree(var);
       return -1;
     }
