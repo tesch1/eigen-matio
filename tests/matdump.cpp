@@ -14,6 +14,7 @@
 #include <MATio>
 
 using namespace Eigen;
+using namespace matio;
 
 int main(int argc, char * argv[])
 {

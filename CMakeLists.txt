@@ -68,3 +68,16 @@ enable_testing ()
 
 add_subdirectory (tests)
 #add_subdirectory (examples)
+
+#
+# etags
+#
+find_program (ETAGS etags)
+if (ETAGS)
+  add_custom_target (tags
+    COMMAND etags --language=c++ ${CMAKE_SOURCE_DIR}/MATio
+    COMMAND etags --language=c++ --append ${CMAKE_SOURCE_DIR}/MexEig
+    COMMAND etags --language=c --append `find ${CMAKE_BINARY_DIR}/matioX/src -name '*.[ch]'`
+    )
+  add_custom_target (etags DEPENDS tags)
+endif (ETAGS)

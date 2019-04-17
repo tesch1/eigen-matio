@@ -23,7 +23,7 @@
 typedef ComplexSplit mat_complex_split_t;
 #endif
 
-namespace Eigen {
+namespace matio {
 
 namespace internal {
 
@@ -111,7 +111,7 @@ template <class T> struct is_complex : std::false_type {};
 /// Check if T is std::complex<>, match std::complex<>.
 template <class T> struct is_complex<std::complex<T> > : std::true_type {};
 
-} // Eigen::internal::
+} // namespace internal
 
 class MatioFile {
 
@@ -121,6 +121,17 @@ private:
   int _mode;
   bool _written;
   std::stringstream _errstr;
+
+  static MatioFile * _logowner;
+  static void log_func(int log_level, char *message) {
+    if (_logowner)
+      _logowner->_errstr << log_level << ":" << message << "\n";
+  }
+
+  void capture_log() {
+    if (!Mat_LogInitFunc("MATio", &log_func))
+      _logowner = this;
+  }
 
 public:
 
@@ -134,12 +145,22 @@ public:
     : _file(NULL), _ft(MAT_FT_DEFAULT), _mode(0), _written(false)
   {
     //Mat_LogInit("hi");
+    capture_log();
     open(filename, mode, create, fileversion, header);
   }
+
+  MatioFile(const std::string & filename,
+            int mode = MAT_ACC_RDWR,
+            bool create = true,
+            mat_ft fileversion = MAT_FT_DEFAULT,
+            const char * header = "MatioFile")
+    : MatioFile(filename.c_str(), mode, create, fileversion, header) { }
 
   ~MatioFile()
   {
     close();
+    if (_logowner == this)
+      _logowner = nullptr;
   }
 
   const std::string lasterr() { return _errstr.str(); }
@@ -154,6 +175,7 @@ public:
            mat_ft fileversion = MAT_FT_DEFAULT,
            const char * header = "MatioFile")
   {
+    capture_log();
     if (_file)
       close();
     _file = Mat_Open(filename, mode);
@@ -165,7 +187,6 @@ public:
 #endif
     }
     if (NULL == _file) {
-      _errstr.clear();
       _errstr << "unable to open " << filename << "/" << fileversion << "\n";
       return -1;
     }
@@ -176,6 +197,7 @@ public:
 
   void close()
   {
+    capture_log();
     if (_file)
       Mat_Close(_file);
     _file = NULL;
@@ -186,11 +208,11 @@ public:
   int reopen()
   {
     if (_file) {
+      capture_log();
       std::string filename = Mat_GetFilename(_file);
       Mat_Close(_file);
       _file = Mat_Open(filename.c_str(), _mode);
       if (NULL == _file) {
-        _errstr.clear();
         _errstr << "unable to reopen '" << filename << "'\n";
         return -1;
       }
@@ -207,13 +229,14 @@ public:
 
   template <class Derived, matio_compression compression = MAT_COMPRESSION_NONE>
   int
-  write_mat(const char * matname, const Derived & matrix)
+  write_mat(const char * matname, const Derived & matrix, bool replace = false)
   {
     if (!_file || !matname) {
       _errstr.clear();
       _errstr << "unable to write matrix '" << matname << "'\n";
       return -1;
     }
+    capture_log();
     typedef typename internal::matio_type<typename Derived::Scalar>::type mat_type;
     matvar_t * var;
 #if MATIO_VERSION >= 150
@@ -234,8 +257,8 @@ public:
     // Derived::Scalar AND Scalar is NOT complex, in which case we dont need to create
     // temp matrices here...
     void * data;
-    Matrix<mat_type,Dynamic,Dynamic> dst_re(rows, cols);
-    Matrix<mat_type,Dynamic,Dynamic> dst_im(rows, cols);
+    Eigen::Matrix<mat_type,Eigen::Dynamic,Eigen::Dynamic> dst_re(rows, cols);
+    Eigen::Matrix<mat_type,Eigen::Dynamic,Eigen::Dynamic> dst_im(rows, cols);
     mat_complex_split_t cs;
 
     // \TODO - sparse matrices
@@ -253,16 +276,17 @@ public:
 
     var = Mat_VarCreate(matname, cid, tid, 2, dims, data, cxflag);
     if (NULL == var) {
-      _errstr.clear();
       _errstr << "unable to create matrix\n";
       return -1;
     }
 
+    if (replace)
+      Mat_VarDelete(_file, matname);
+
     // \TODO - thread safety
     int status = Mat_VarWrite(_file, var, compression);
     if (status) {
-      _errstr.clear();
-      _errstr << "unable to put variable '" << matname << "'\n";
+      _errstr << "unable to write variable '" << matname << "' : " << status << "\n";
     }
     else
       _written = true;
@@ -277,7 +301,10 @@ private:
   void matrix_from_var(Derived & matrix, matvar_t * var, std::false_type)
   {
     typedef typename Derived::Scalar Scalar;
-    Map<Matrix<data_t, Dynamic, Dynamic> > tmp((data_t *)var->data, var->dims[0], var->dims[1]);
+
+    Eigen::Map<Eigen::Matrix<data_t, Eigen::Dynamic, Eigen::Dynamic> >
+      tmp((data_t *)var->data, var->dims[0], var->dims[1]);
+
     matrix = tmp.template cast<Scalar>();
   }
 
@@ -285,9 +312,13 @@ private:
   void matrix_from_var(Derived & matrix, matvar_t * var, std::true_type)
   {
     typedef typename Derived::Scalar Scalar;
+
     mat_complex_split_t * cs = (mat_complex_split_t *)var->data;
-    Map<Matrix<data_t, Dynamic, Dynamic> > tmp_re((data_t *)cs->Re, var->dims[0], var->dims[1]);
-    Map<Matrix<data_t, Dynamic, Dynamic> > tmp_im((data_t *)cs->Im, var->dims[0], var->dims[1]);
+    Eigen::Map<Eigen::Matrix<data_t, Eigen::Dynamic, Eigen::Dynamic> >
+      tmp_re((data_t *)cs->Re, var->dims[0], var->dims[1]);
+    Eigen::Map<Eigen::Matrix<data_t, Eigen::Dynamic, Eigen::Dynamic> > 
+      tmp_im((data_t *)cs->Im, var->dims[0], var->dims[1]);
+
     matrix.real() = tmp_re.template cast<Scalar>();
     matrix.imag() = tmp_im.template cast<Scalar>();
   }
@@ -303,9 +334,11 @@ public:
       reopen();
     if (!_file || !matname) {
       _errstr.clear();
-      _errstr << "unable to read file for matrix '" << matname << "'\n";
+      _errstr << "file for matrix '" << matname << "' is not open\n";
       return -1;
     }
+
+    capture_log();
 
     matvar_t * var = Mat_VarRead(_file, matname);
     if (NULL == var) {
@@ -319,7 +352,7 @@ public:
       return -1;
     }
 
-    if (var->isComplex != NumTraits<typename Derived::Scalar>::IsComplex) {
+    if (var->isComplex != Eigen::NumTraits<typename Derived::Scalar>::IsComplex) {
       _errstr << "unable to mix real/complex matrices: '" << matname << "':\n ";
       Mat_VarFree(var);
       return -1;
@@ -370,21 +403,35 @@ public:
 };
 
 template <class Derived, matio_compression compression = MAT_COMPRESSION_NONE>
-int
-write_mat(const char * filename, const char * matname, const Derived & matrix)
+int write_mat(const char * filename, const char * matname, const Derived & matrix)
 {
   MatioFile file(filename);
   return file.write_mat<Derived, compression>(matname, matrix);
 }
+template <class Derived, matio_compression compression = MAT_COMPRESSION_NONE>
+int write_mat(const std::string & filename, const char * matname, const Derived & matrix, bool replace = false)
+{
+  MatioFile file(filename.c_str());
+  return file.write_mat<Derived, compression>(matname, matrix, replace);
+}
 
 template <class Derived>
-int
-read_mat(const char * filename, const char * matname, Derived & matrix)
+int read_mat(const char * filename, const char * matname, Derived & matrix)
 {
   MatioFile file(filename, MAT_ACC_RDONLY, false);
   return file.read_mat(matname, matrix);
 }
-
+template <class Derived>
+int read_mat(const std::string & filename, const char * matname, Derived & matrix)
+{
+  MatioFile file(filename.c_str(), MAT_ACC_RDONLY, false);
+  return file.read_mat(matname, matrix);
 }
+
+#ifndef EIGEN_MATIO_NOIMPL
+MatioFile * MatioFile::_logowner;
+#endif
+
+} // namespace matio
 
 #endif // EIGEN_MATIO_MODULE

@@ -10,6 +10,7 @@
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 //
 
+#include <stdlib.h>
 #include <iostream>
 #include "Eigen/Core"
 #include "Eigen/Dense"
@@ -17,8 +18,9 @@
 #include "gtest/gtest.h"
 
 using namespace Eigen;
+using namespace matio;
 
-const char * datafile = "../tests/data.mat";
+std::string datafile;
 
 TEST(read, float) {
   Matrix3f ff;
@@ -34,17 +36,33 @@ TEST(read, double) {
   EXPECT_EQ(0, read_mat(datafile, "dd", ddx));
   EXPECT_EQ(0, read_mat(datafile, "dd", dd24));
 }
-TEST(rw, float) {
+TEST(rw_member, float) {
   MatrixXf ff;
   MatrixXf off;
+  MatioFile f(datafile);
+  ASSERT_EQ(0, f.read_mat("ff", ff)) << f.lasterr();
+  MatioFile fo("out.mat");
+  ASSERT_EQ(0, fo.write_mat("off", ff, true)) << fo.lasterr();
+  ASSERT_EQ(0, fo.read_mat("off", off)) << fo.lasterr();
+  ASSERT_NEAR((ff - off).norm(), 0, 1e-7);
+}
+TEST(rw_func, float) {
+  MatrixXf ff;
+  MatrixXf off;
+  ff = MatrixXf::Random(3,4);
+  ASSERT_EQ(0, write_mat("out.mat", "off", ff, true));
+  ff.setZero();
   ASSERT_EQ(0, read_mat(datafile, "ff", ff));
-  ASSERT_EQ(0, write_mat("out.mat", "off", ff));
+  ASSERT_EQ(0, write_mat("out.mat", "off", ff, true));
   ASSERT_EQ(0, read_mat("out.mat", "off", off));
   ASSERT_NEAR((ff - off).norm(), 0, 1e-7);
 }
 
 int main(int argc, char * argv[])
 {
+  datafile = getenv("CMAKE_SOURCE_DIR")
+    ? std::string(getenv("CMAKE_SOURCE_DIR")) + "/tests/data.mat"
+    : "../tests/data.mat";
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

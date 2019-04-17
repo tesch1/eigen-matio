@@ -1,28 +1,31 @@
 # eigen-matio (MATio)
 
-[Eigen](http://http://eigen.tuxfamily.org) header-only library for
-reading and writing Eigen matrices to/from matlab data files, using
-the ['matio'](http://sourceforge.net/projects/matio/) library as a
-backend.  It would be nice to incorporate this with Eigen someday.
+C++ single-file header-only classes for reading and writing
+[Eigen](http://http://eigen.tuxfamily.org) matrices to/from matlab
+data files.  It requires the
+['matio'](http://sourceforge.net/projects/matio/) library as a
+backend.
 
 # eigen-mexeig (MexEig)
 
-A single-file-header `MexEig` for use in mex files to convert Eigen
-matrices to/from mxArray structures.
+C++ single-file-header [MexEig](./MexEig) for inclusion in mex files
+to simply convert Eigen matrices to and from mxArray structures.
 
-# Usage
-there are two functions in MexEig:
+# Overview
+
+There are two functions in MexEig:
 - EigenToMxArray(mxArray * dst, const Matrix & src)
 - MxArrayToEigen(Matrix & dst, const mxArray * src)
 
-there are two interfaces in MATio:
-- a MatioFile() class that wraps a matlab data file
-- bare functions that hide the MatioFile() class
- - mat_read(filename, matrixname, Matrix)
- - mat_write(filename, matrixname, Matrix)
+MATio exports a single class:
+- MatioFile wraps a matio data file, and provides read_mat() and
+  write_mat() functions to read and write matrices from that file.
 
-Using the functions in MexEig in a mex .cpp file, just a simple
-example that copies the input to the output:
+# Using (MexEig)
+
+Just `#include "MexEig"` in a mex .cpp file, and call the wrappers.
+If the requested conversions are impossible, exceptions will be
+thrown, so catch those too:
 
 ```cpp
 #include "mex.h"
@@ -30,14 +33,11 @@ example that copies the input to the output:
 #include <Eigen/Core>
 #include "MexEig"
 
-void mexFunction(int nlhs, mxArray *plhs[],
-                 int nrhs, const mxArray *prhs[])
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   try {
-    if (nrhs != 1)
-      throw std::invalid_argument("requires one input arg");
-    if (nlhs != 1)
-      throw std::invalid_argument("requires one ouput arg");
+    if (nrhs != 1) throw std::invalid_argument("requires one input arg");
+    if (nlhs != 1) throw std::invalid_argument("requires one ouput arg");
 
     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> x;
     MxArrayToEigen(x, prhs[0]);
@@ -49,6 +49,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 }
 ```
 
+# Using (MATio)
 
 Using the bare functions in MATio:
 ```cpp
