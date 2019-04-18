@@ -5,9 +5,7 @@
 %   octave --no-gui --path tests --eval mexeig_test
 %
 disp('building mex test function')
-pwd
-ls
-ls build
+
 if (exist ('OCTAVE_VERSION', 'builtin') > 0)
     setenv('XTRA_CXXFLAGS','-std=c++11')
     mkoctfile --mex tests/mextest.cpp -v -Ibuild/eigenX/src/eigenX
