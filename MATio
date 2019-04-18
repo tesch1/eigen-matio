@@ -149,7 +149,6 @@ public:
             const char * header = "MatioFile")
     : _file(NULL), _ft(MAT_FT_DEFAULT), _mode(0), _written(false)
   {
-    capture_log();
     open(filename, mode, create, fileversion, header);
   }
 
@@ -180,9 +179,9 @@ public:
            mat_ft fileversion = MAT_FT_DEFAULT,
            const char * header = "MatioFile")
   {
-    capture_log();
     if (_file)
       close();
+    capture_log();
     _file = Mat_Open(filename, mode);
     if (_file == NULL && create && mode != MAT_ACC_RDONLY) {
 #if MATIO_VERSION >= 150

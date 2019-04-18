@@ -93,10 +93,6 @@ template <class Derived>
 void MxArrayToEigen(Derived & matrix, const mxArray * a)
 {
   typedef typename Derived::Scalar Scalar;
-  //auto & m = const_cast<Eigen::MatrixBase<Derived> & >(emm);
-  //Derived matrix;
-  //mexPrintf("resize: %d %d\n", mxGetM(a), mxGetN(a));
-  //mexPrintf("[0]: %f \n", mxGetScalar(a));
 
   if (((size_t)matrix.rows() != mxGetM(a) && Derived::RowsAtCompileTime != Eigen::Dynamic) ||
       ((size_t)matrix.cols() != mxGetN(a) && Derived::ColsAtCompileTime != Eigen::Dynamic)) {
