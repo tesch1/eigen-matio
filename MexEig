@@ -1,8 +1,9 @@
 // -*- c++ -*-
-// This file is part of Eigen, a lightweight C++ template library
-// for linear algebra.
 //
-// Copyright (C) 2015 Michael Tesch, tesch1 (a) gmail com
+// This file is part of eigen-matio, a lightweight C++ template
+// library for reading data files into Eigen matrices.
+//
+// Copyright (C) 2019 Michael Tesch, tesch1 (a) gmail com
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
@@ -14,7 +15,7 @@
 #include <complex>
 #include <exception>
 #include <type_traits>
-#include <Eigen/Core>
+#include <Eigen/Dense>
 
 #ifndef MX_HAS_INTERLEAVED_COMPLEX
 #define MX_HAS_INTERLEAVED_COMPLEX 0
@@ -64,18 +65,22 @@ template <> struct classid_type<mxUINT64_CLASS> { typedef uint64_t type; };
 
 }
 
-// complex-matrix
+// assign to complex-matrix
 template <class T, class Derived>
 void AssignImag(std::true_type, Derived & M, const mxArray * a)
 {
   typedef typename Derived::RealScalar Real;
   Map<Matrix<T, Dynamic, Dynamic> > tmp((T *)mxGetPr(a), mxGetM(a), mxGetN(a));
   M.real() = tmp.template cast<Real>();
-  Map<Matrix<T, Dynamic, Dynamic> > tmp2((T *)mxGetPi(a), mxGetM(a), mxGetN(a));
-  M.imag() = tmp2.template cast<Real>();
+  if (mxIsComplex(a)) {
+    Map<Matrix<T, Dynamic, Dynamic> > tmp2((T *)mxGetPi(a), mxGetM(a), mxGetN(a));
+    M.imag() = tmp2.template cast<Real>();
+  }
+  else
+    M.imag().setZero();
 }
 
-// real-matrix
+// assign to real-matrix
 template <class T, class Derived>
 void AssignImag(std::false_type, Derived & M, const mxArray * a)
 {
@@ -85,29 +90,34 @@ void AssignImag(std::false_type, Derived & M, const mxArray * a)
 }
 
 template <class Derived>
-void MxArrayToEigen(Derived & em, const mxArray * a)
+void MxArrayToEigen(Derived & matrix, const mxArray * a)
 {
   typedef typename Derived::Scalar Scalar;
-  //auto & m = const_cast<Eigen::MatrixBase<Derived> & >(emm);
-  //Derived em;
-  //mexPrintf("resize: %d %d\n", mxGetM(a), mxGetN(a));
-  //mexPrintf("[0]: %f \n", mxGetScalar(a));
-  em.resize(mxGetM(a), mxGetN(a));
 
-  if (em.rows() != (Eigen::Index)mxGetM(a) || em.cols() != (Eigen::Index)mxGetN(a))
-    throw std::invalid_argument("tried to assign wrong sized matrix to fixed-size EigenMatrix");
+  if (((size_t)matrix.rows() != mxGetM(a) && Derived::RowsAtCompileTime != Eigen::Dynamic) ||
+      ((size_t)matrix.cols() != mxGetN(a) && Derived::ColsAtCompileTime != Eigen::Dynamic)) {
+    std::stringstream s;
+    s << "Attempted to convert " << mxGetM(a) << "x" << mxGetN(a)
+      << " matrix into fixed-size Matrix "
+      << (Derived::RowsAtCompileTime == Eigen::Dynamic ? mxGetM(a) : Derived::RowsAtCompileTime)
+      << "x"
+      << (Derived::ColsAtCompileTime == Eigen::Dynamic ? mxGetN(a) : Derived::ColsAtCompileTime);
+    throw std::invalid_argument(s.str());
+  }
+
+  matrix.resize(mxGetM(a), mxGetN(a));
 
   mxClassID classid = mxGetClassID(a);
   bool iscomplex = internal::is_complex<Scalar>::value;
 
   if (mxIsComplex(a) && !iscomplex)
-    throw std::invalid_argument("tried to assign complex mxArray to non-complex EigenMatrix");
+    throw std::invalid_argument("Tried to assign complex mxArray to non-complex EigenMatrix");
 
 #define HANDLE_TYPE(CLASSID)                                            \
   else if (classid == CLASSID)                                          \
     do {                                                                \
       typedef typename internal::classid_type<CLASSID>::type data_t;    \
-      AssignImag<data_t>(typename internal::is_complex<Scalar>{}, em, a); \
+      AssignImag<data_t>(typename internal::is_complex<Scalar>{}, matrix, a); \
     } while (0)
 
   if (0) ;
@@ -125,9 +135,8 @@ void MxArrayToEigen(Derived & em, const mxArray * a)
   HANDLE_TYPE(mxINT64_CLASS);
   HANDLE_TYPE(mxUINT64_CLASS);
   else {
-    throw std::invalid_argument("unknown ClassID, HANDLE_TYPE failed");
+    throw std::invalid_argument("Unknown mxArray type ClassID, HANDLE_TYPE failed");
   }
-  //m = em;
 }
 
 // todo: take EigenBase and detect SparseMatrix
@@ -182,7 +191,7 @@ mxArray * EigenToMxArray(MatrixBase<Derived> const & em)
   case mxSTRUCT_CLASS:
   case mxFUNCTION_CLASS:
   default:
-    throw std::invalid_argument("unable to find mxClassID for Eigen::Matrix<>::Scalar");
+    throw std::invalid_argument("Unable to find mxClassID for Eigen::Matrix<>::Scalar");
     break;
   }
   return a;
