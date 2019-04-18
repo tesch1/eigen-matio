@@ -25,16 +25,17 @@ std::string datafile;
 TEST(read, float) {
   Matrix3f ff;
   MatrixXf ffx;
-  EXPECT_EQ(-1, read_mat(datafile, "ff", ff));
-  EXPECT_EQ( 0, read_mat(datafile, "ff", ffx));
+  EXPECT_THROW(read_mat(datafile, "ff", ff), std::invalid_argument);
+  EXPECT_NO_THROW(read_mat(datafile, "ff", ffx));
 }
 TEST(read, double) {
   Matrix3d dd;
   MatrixXd ddx;
   Matrix<double,2,4> dd24;
-  EXPECT_EQ(-1, read_mat(datafile, "dd", dd));
-  EXPECT_EQ(0, read_mat(datafile, "dd", ddx));
-  EXPECT_EQ(0, read_mat(datafile, "dd", dd24));
+  EXPECT_THROW(read_mat(datafile, "dd", dd), std::invalid_argument);
+  EXPECT_NO_THROW(read_mat(datafile, "dd", ddx));
+  EXPECT_NO_THROW(read_mat(datafile, "dd", dd24));
+  EXPECT_EQ((ddx - dd24).norm(), 0);
 }
 TEST(rw_member, float) {
   MatrixXf ff;
@@ -50,11 +51,12 @@ TEST(rw_func, float) {
   MatrixXf ff;
   MatrixXf off;
   ff = MatrixXf::Random(3,4);
-  ASSERT_EQ(0, write_mat("out.mat", "off", ff, true));
+  EXPECT_NO_THROW(write_mat("out.mat", "off", ff, true));
   ff.setZero();
-  ASSERT_EQ(0, read_mat(datafile, "ff", ff));
-  ASSERT_EQ(0, write_mat("out.mat", "off", ff, true));
-  ASSERT_EQ(0, read_mat("out.mat", "off", off));
+  EXPECT_NO_THROW(read_mat(datafile, "ff", ff));
+  EXPECT_NO_THROW(write_mat("out.mat", "off", ff, true));
+  EXPECT_THROW(write_mat("out.mat", "off", ff), std::invalid_argument);
+  EXPECT_NO_THROW(read_mat("out.mat", "off", off));
   ASSERT_NEAR((ff - off).norm(), 0, 1e-7);
 }
 

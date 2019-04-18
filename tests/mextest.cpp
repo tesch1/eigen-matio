@@ -26,9 +26,12 @@ void mexFunction(int nlhs, mxArray *plhs[],
     if (nlhs != 1)
       throw std::invalid_argument("requires one ouput arg");
 
-    Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> x;
-    MxArrayToEigen(x, prhs[0]);
-    plhs[0] = EigenToMxArray(x);
+    Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> xi(0,0);
+    MxArrayToEigen(xi, prhs[0]);
+    plhs[0] = EigenToMxArray(xi);
+    //Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> xr(0,0);
+    //MxArrayToEigen(xr, prhs[0]);
+    //plhs[0] = EigenToMxArray(xr);
   }
   catch (std::exception & ex) {
     mexErrMsgIdAndTxt("tmp:error", ex.what());

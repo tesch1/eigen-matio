@@ -37,3 +37,16 @@ else (CMAKE_VERSION VERSION_LESS 3.10)
   endforeach (TEST)
 
 endif (CMAKE_VERSION VERSION_LESS 3.10)
+
+#
+# MexEig test with octave
+#
+find_program (OCTAVE_BIN octave)
+if (OCTAVE_BIN)
+  add_test (
+    NAME MexEig-octave
+    COMMAND ${OCTAVE_BIN} --no-gui --path ${CMAKE_CURRENT_SOURCE_DIR} --eval mexeig_test
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+  set_tests_properties (MexEig-octave PROPERTIES DEPENDS eigenX)
+endif (OCTAVE_BIN)
