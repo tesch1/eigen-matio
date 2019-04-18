@@ -26,8 +26,8 @@ MATio exports a single class MatioFile():
 
 And two stand-alone functions that throw standard exceptions on
 error conditions:
-- `template <class Derived> void read_mat(const char * filename, const char * matname, Derived & matrix)`
-- `template <class Derived> void write_mat(const char * filename, const char * matname, Derived & matrix, bool replace = false)`
+- `void read_mat(const char * filename, const char * matname, Derived & matrix)`
+- `void write_mat(const char * filename, const char * matname, Derived & matrix, bool replace = false)`
 
 
 # Using (MexEig)
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
   ff = Matrix3f::Random();
   
   // write ff as double precision matrix 'dd'
-  if (!file.write_mat("dd", ff.cast<double>()))
+  if (file.write_mat("dd", ff.cast<double>()))
     std::cout << "error: " << file.lasterr() << std::endl;
 }
 ```
