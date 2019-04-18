@@ -29,9 +29,10 @@ before_install:
 
 install:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
-  - cmake -Bbuild .
-  - cmake --build build
+  - mkdir build && cd build
+  - cmake ..
+  - cmake --build .
 
 script:
-  - cmake --build build --target test
+  - cmake --build . --target test
   - cat Testing/Temporary/*.log
