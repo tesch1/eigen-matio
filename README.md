@@ -145,10 +145,12 @@ maintain the same code formatting.
 
 # ChangeLog
 
-- v0.0.1
-  initial release, not very good but semi-functional.
+- v1.0.1
+  Wrap static members in static functions.
 - v1.0.0
-  cleaned up a lot of small problems and changed the API.
+  Cleaned up a lot of small problems and changed the API.
+- v0.0.1
+  Initial release, not very good but semi-functional.
 
 # License
 Mozilla 2.0, like the rest of Eigen.

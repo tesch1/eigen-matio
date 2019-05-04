@@ -123,19 +123,28 @@ private:
   bool _written;
   std::stringstream _errstr;
 
-  static std::mutex _logowner_mutex;
-  static MatioFile * _logowner;
+  static std::mutex & get_mutex() {
+    static std::mutex logowner_mutex;
+    return logowner_mutex;
+  }
 
+  static MatioFile * _logowner(MatioFile * setval = (MatioFile *)1) {
+    static MatioFile * logowner = nullptr;
+    if (setval != (MatioFile *)1)
+      logowner = setval;
+    return logowner;
+  }
+  
   static void log_func(int log_level, char *message) {
-    std::lock_guard<std::mutex> guard(_logowner_mutex);
-    if (_logowner)
-      _logowner->_errstr << log_level << ":" << message << "\n";
+    std::lock_guard<std::mutex> guard(get_mutex());
+    if (_logowner())
+      _logowner()->_errstr << log_level << ":" << message << "\n";
   }
 
   void capture_log() {
-    std::lock_guard<std::mutex> guard(_logowner_mutex);
+    std::lock_guard<std::mutex> guard(get_mutex());
     if (!Mat_LogInitFunc("MATio", &log_func))
-      _logowner = this;
+      _logowner(this);
   }
 
 public:
@@ -162,9 +171,9 @@ public:
   ~MatioFile()
   {
     close();
-    std::lock_guard<std::mutex> guard(_logowner_mutex);
-    if (_logowner == this)
-      _logowner = nullptr;
+    std::lock_guard<std::mutex> guard(get_mutex());
+    if (_logowner() == this)
+      _logowner(nullptr);
   }
 
   const std::string lasterr() { return _errstr.str(); }
@@ -448,11 +457,6 @@ void read_mat(const std::string & filename, const char * matname, Derived & matr
   if (file.read_mat(matname, matrix))
     throw std::invalid_argument(file.lasterr());
 }
-
-#ifndef EIGEN_MATIO_NOIMPL
-MatioFile * MatioFile::_logowner;
-std::mutex MatioFile::_logowner_mutex;
-#endif
 
 } // namespace matio
 
